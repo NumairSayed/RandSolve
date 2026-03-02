@@ -83,6 +83,15 @@ if(RANDNLA_BUILD_EXPERIMENTS)
 endif()
 
 # ============================================================
+# Gauss-Newton experiment
+# ============================================================
+add_executable(gauss_newton_experiment
+  src/gauss_newton_experiment.cpp
+  src/utils.cpp
+)
+randnla_link_target(gauss_newton_experiment)
+
+# ============================================================
 # Install
 # ============================================================
 install(TARGETS randnla_main DESTINATION bin)
