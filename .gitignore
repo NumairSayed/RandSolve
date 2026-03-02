@@ -1,0 +1,62 @@
+# Build directories
+build/
+build_*/
+out/
+cmake-build-*/
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps/
+
+# Compiled binaries
+randnla_main
+speed_experiment
+*.out
+*.exe
+
+# Object files and archives
+*.o
+*.a
+*.so
+*.so.*
+*.dylib
+
+# Dependency files
+*.d
+
+# IDE / editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.code-workspace
+
+# Clang tooling
+.clangd/
+.clang-tidy
+compile_flags.txt
+
+# Valgrind / profiling output
+callgrind.out.*
+massif.out.*
+perf.data
+perf.data.old
+gmon.out
+
+# Logs and benchmark output
+*.log
+*.csv
+*.json
+
+# Third party (if vendored via git clone)
+third_party/eigen/
+third_party/*/
+!third_party/README.md
