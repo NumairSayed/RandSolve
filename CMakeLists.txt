@@ -91,6 +91,12 @@ add_executable(gauss_newton_experiment
 )
 randnla_link_target(gauss_newton_experiment)
 
+add_executable(benchmark
+  benchmark/benchmark.cpp
+  src/utils.cpp
+)
+randnla_link_target(benchmark)
+
 # ============================================================
 # Install
 # ============================================================
