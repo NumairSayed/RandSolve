@@ -97,6 +97,13 @@ add_executable(benchmark
 )
 randnla_link_target(benchmark)
 
+# Attention benchmark
+add_executable(attention_benchmark
+  src/attention_benchmark.cpp
+  src/utils.cpp
+)
+randnla_link_target(attention_benchmark)
+
 # ============================================================
 # Install
 # ============================================================
