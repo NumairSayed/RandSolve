@@ -64,3 +64,4 @@ third_party/*/
 # unnecessary media
 *.png
 *.csv
+*.json

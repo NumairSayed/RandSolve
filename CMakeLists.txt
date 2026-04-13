@@ -104,6 +104,10 @@ add_executable(attention_benchmark
 )
 randnla_link_target(attention_benchmark)
 
+add_executable(quality_verify src/quality_verify.cpp src/utils.cpp)
+randnla_link_target(quality_verify)
+
+
 # ============================================================
 # Install
 # ============================================================

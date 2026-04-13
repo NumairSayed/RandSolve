@@ -236,40 +236,52 @@ public:
     const Matrix& K,
     const Matrix& V,
     int k_seq) {
+        using namespace std::chrono;
         int L = static_cast<int>(Q.rows());
         int d = static_cast<int>(Q.cols());
         k_seq = std::min(k_seq, L);
 
-        // ── Sample k landmark indices uniformly without replacement ──────
-        std::vector<int> all_idx(L);
-        std::iota(all_idx.begin(), all_idx.end(), 0);
+        AttentionResult<Scalar> res;
+        auto t0 = high_resolution_clock::now();
 
-        // Fisher-Yates partial shuffle: j uniform in [i, L-1].
-        std::mt19937_64 gen(cfg_.rng_seed + call_count_);
+        // ── Step 1: Sample k landmark indices WITHOUT replacement ──────────
+        // Use Fisher-Yates on a local index vector.
+        // Critically: use a FIXED seed per call so results are reproducible.
+        std::vector<int> idx(L);
+        std::iota(idx.begin(), idx.end(), 0);
+        std::mt19937 gen(static_cast<uint32_t>(cfg_.rng_seed + call_count_++));
         for (int i = 0; i < k_seq; ++i) {
-            int j = std::uniform_int_distribution<int>(i, L - 1)(gen);
-            std::swap(all_idx[i], all_idx[j]);
+        std::uniform_int_distribution<int> dist(i, L - 1);
+        std::swap(idx[i], idx[dist(gen)]);
         }
+        // idx[0..k_seq-1] are the landmark token positions
 
-        // ── Extract landmark K and V rows ────────────────────────────────
-        // K_land[i] = K[all_idx[i]]  — actual token keys, not random mixtures
+        // ── Step 2: Gather landmark K and V rows ───────────────────────────
+        // K_land[i] = K.row(idx[i])  — a real token's key vector
+        // V_land[i] = V.row(idx[i])  — the SAME token's value vector
+        // This is the key correctness constraint: same index for K and V.
         Matrix K_land(k_seq, d);
         Matrix V_land(k_seq, d);
         for (int i = 0; i < k_seq; ++i) {
-        K_land.row(i) = K.row(all_idx[i]);
-        V_land.row(i) = V.row(all_idx[i]);
+        K_land.row(i) = K.row(idx[i]);
+        V_land.row(i) = V.row(idx[i]);
         }
 
-        // ── Each query attends to k landmark tokens ──────────────────────
-        Scalar score_scale = Scalar{1} / std::sqrt(static_cast<Scalar>(d));
-        Matrix Scores = (Q * K_land.transpose()) * score_scale;  // (L, k)
-        Matrix A      = row_softmax<Scalar>(Scores);              // (L, k)
+        // ── Step 3: Compute scores Q vs landmark keys ──────────────────────
+        // Scores[i,j] = Q[i] · K_land[j] / sqrt(d)
+        // Shape: (L, k_seq)  ← this is the sublinear part
+        Scalar scale = Scalar{1} / std::sqrt(static_cast<Scalar>(d));
+        Matrix Scores = (Q * K_land.transpose()) * scale;   // (L, k_seq)
 
-        AttentionResult<Scalar> res;
-        res.output = A * V_land;   // (L, d)
-        ++call_count_;
+        // ── Step 4: Softmax over k_seq landmark dimension ──────────────────
+        Matrix A = row_softmax<Scalar>(Scores);              // (L, k_seq)
+
+        // ── Step 5: Weighted sum of landmark values ────────────────────────
+        res.output = A * V_land;                             // (L, d)
+        res.total_ms = duration<double, std::milli>(
+        high_resolution_clock::now() - t0).count();
         return res;
-    }
+        }
 
 
     /**
