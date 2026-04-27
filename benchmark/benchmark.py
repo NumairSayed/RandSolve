@@ -9,6 +9,10 @@ import matplotlib.pyplot as plt
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 BINARY = os.path.join(SCRIPT_DIR, "..", "build", "benchmark")
 
+# Directory to save plots
+OUTPUT_DIR = os.path.join(SCRIPT_DIR, "plots")
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
 
 # ----------------------------
 # Run C++ binary
@@ -47,7 +51,7 @@ def parse_output(text):
             current = "attention"
             continue
 
-        # Capture exact times
+        # Exact times
         if "Exact:" in line and current == "regression":
             data["regression"]["exact_time"] = float(line.split()[1])
         elif "Exact:" in line and current == "attention":
@@ -94,14 +98,12 @@ def annotate(xs, ys):
 
 
 # ----------------------------
-# Plot everything
+# Plot and save
 # ----------------------------
 def plot_all(data):
 
-    plt.figure(figsize=(12, 10))
-
     # ---------- Regression Error ----------
-    plt.subplot(3, 2, 1)
+    plt.figure()
     for kind in ["Gaussian", "Sparse"]:
         vals = sorted(data["regression"][kind])
         if vals:
@@ -116,8 +118,12 @@ def plot_all(data):
     plt.legend()
     plt.grid()
 
+    plt.savefig(os.path.join(OUTPUT_DIR, "regression_error.png"))
+    plt.close()
+
+
     # ---------- Regression Time ----------
-    plt.subplot(3, 2, 2)
+    plt.figure()
     all_ks = []
     for kind in ["Gaussian", "Sparse"]:
         vals = sorted(data["regression"][kind])
@@ -142,8 +148,12 @@ def plot_all(data):
     plt.legend()
     plt.grid()
 
+    plt.savefig(os.path.join(OUTPUT_DIR, "regression_time.png"))
+    plt.close()
+
+
     # ---------- Attention Error ----------
-    plt.subplot(3, 2, 3)
+    plt.figure()
     for kind in ["Gaussian", "Sparse"]:
         vals = sorted(data["attention"][kind])
         if vals:
@@ -158,8 +168,12 @@ def plot_all(data):
     plt.legend()
     plt.grid()
 
+    plt.savefig(os.path.join(OUTPUT_DIR, "attention_error.png"))
+    plt.close()
+
+
     # ---------- Attention Time ----------
-    plt.subplot(3, 2, 4)
+    plt.figure()
     all_ks = []
     for kind in ["Gaussian", "Sparse"]:
         vals = sorted(data["attention"][kind])
@@ -184,9 +198,13 @@ def plot_all(data):
     plt.legend()
     plt.grid()
 
+    plt.savefig(os.path.join(OUTPUT_DIR, "attention_time.png"))
+    plt.close()
+
+
     # ---------- PCA ----------
-    plt.subplot(3, 1, 3)
     if data["pca"]:
+        plt.figure()
         labels = ["Exact SVD", "RandSVD"]
         times = [data["pca"]["exact_time"], data["pca"]["rand_time"]]
 
@@ -199,8 +217,8 @@ def plot_all(data):
         plt.ylabel("Time (ms)")
         plt.grid(axis='y')
 
-    plt.tight_layout()
-    plt.show()
+        plt.savefig(os.path.join(OUTPUT_DIR, "pca_time.png"))
+        plt.close()
 
 
 # ----------------------------
@@ -218,6 +236,8 @@ def main():
     print(data)
 
     plot_all(data)
+
+    print(f"\nPlots saved in: {OUTPUT_DIR}")
 
 
 if __name__ == "__main__":

@@ -38,6 +38,11 @@ add_link_options(
 find_package(Eigen3 3.4 REQUIRED NO_MODULE)
 
 # ============================================================
+# pybind11
+# ============================================================
+find_package(pybind11 REQUIRED)
+
+# ============================================================
 # Optional BLAS/LAPACK
 #   Enable with:  cmake .. -DRANDNLA_USE_LAPACK=ON
 #   Eigen will automatically use BLAS/LAPACK internally when
@@ -96,6 +101,12 @@ add_executable(benchmark
   src/utils.cpp
 )
 randnla_link_target(benchmark)
+
+# ============================================================
+# Python bindings (RSVD)
+# ============================================================
+pybind11_add_module(rsvd_backend python_bindings.cpp)
+target_link_libraries(rsvd_backend PRIVATE Eigen3::Eigen)
 
 # ============================================================
 # Install

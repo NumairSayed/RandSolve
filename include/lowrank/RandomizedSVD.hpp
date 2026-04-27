@@ -44,20 +44,66 @@ public:
     /**
      * @brief Compute rank-k approximation using provided RNG.
      */
-    void compute(const Matrix& A, int rank, IRNG<Scalar>& rng) {
+    void compute(const Matrix& A, int rank, IRNG<Scalar>& rng,
+             const std::string& sketch_type = "gaussian") {
         int m = static_cast<int>(A.rows());
         int n = static_cast<int>(A.cols());
         int l = rank + oversampling_;
         l = std::min(l, std::min(m, n));
-
-        // Step 1: Random Gaussian sketch Ω ∈ R^{n×l}
-        Matrix Omega(n, l);
-        for (int i = 0; i < n; ++i)
-            for (int j = 0; j < l; ++j)
-                Omega(i, j) = rng.normal();
-
-        // Step 2: Y = A * Ω
-        Matrix Y = A * Omega;
+                    
+        Matrix Y;
+                    
+        if (sketch_type == "gaussian") {
+        
+            Matrix Omega(n, l);
+            for (int i = 0; i < n; ++i)
+                for (int j = 0; j < l; ++j)
+                    Omega(i, j) = rng.normal();
+        
+            Y = A * Omega;
+        }
+        
+        else if (sketch_type == "count") {
+        
+            // CountSketch: Y = S * A
+            // S is implicit (hash + sign), so we build Y directly
+        
+            Y = Matrix::Zero(l, n);  // sketch rows
+        
+            for (int i = 0; i < m; ++i) {
+                int h = std::abs((int)(rng.normal() * 1e6)) % l; // hash
+                Scalar s = (rng.normal() > 0) ? 1 : -1;          // sign
+            
+                Y.row(h) += s * A.row(i);
+            }
+        
+            // transpose to match expected shape (m x l)
+            Y = Y.transpose();
+        }
+        
+        else if (sketch_type == "hadamard") {
+        
+            // Simplified SRHT-like: random sign + subsampling
+            // (not full FFT Hadamard, but acceptable for project)
+        
+            Matrix D = Matrix::Identity(n, n);
+        
+            for (int i = 0; i < n; ++i)
+                D(i, i) = (rng.normal() > 0) ? 1 : -1;
+        
+            Matrix AD = A * D;
+        
+            // random column sampling
+            Y = Matrix(m, l);
+            for (int j = 0; j < l; ++j) {
+                int col = std::abs((int)(rng.normal() * 1e6)) % n;
+                Y.col(j) = AD.col(col);
+            }
+        }
+        
+        else {
+            throw std::runtime_error("Unknown sketch type");
+        }
 
         // Step 3: Power iteration for better spectral decay
         for (int iter = 0; iter < power_iters_; ++iter) {
